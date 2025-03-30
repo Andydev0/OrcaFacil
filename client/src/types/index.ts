@@ -1,97 +1,164 @@
-export type NavItem = {
-  title: string;
+export type ItemNavegacao = {
+  titulo: string;
   href: string;
-  icon: string;
-  isActive?: boolean;
+  icone: string;
+  estaAtivo?: boolean;
 };
 
-export interface Client {
+export interface Cliente {
   id: number;
+  nome: string;
+  documento?: string;
+  email?: string;
+  telefone?: string;
+  endereco?: string;
+  criadoEm: Date;
+}
+
+export interface Produto {
+  id: number;
+  nome: string;
+  descricao?: string;
+  preco: number;
+  tipo: 'produto' | 'servico';
+  unidade?: string;
+  codigoInterno?: string;
+  criadoEm: Date;
+}
+
+export interface ItemOrcamento {
+  id: number;
+  orcamentoId: number;
+  produtoId: number;
+  produto?: Produto;
+  quantidade: number;
+  precoUnitario: number;
+  desconto: number;
+  descricao?: string;
+  subtotal: number;
+}
+
+export type StatusOrcamento = 'rascunho' | 'pendente' | 'aprovado' | 'recusado' | 'analisando';
+
+export interface ConfiguracaoImpostos {
+  iss: number;
+  pis: number;
+  cofins: number;
+  outros?: string;
+}
+
+export interface Orcamento {
+  id: number;
+  titulo: string;
+  clienteId: number;
+  cliente?: Partial<Cliente>;
+  criadoEm: Date;
+  validoAte: Date;
+  status: StatusOrcamento;
+  total: number;
+  observacoes?: string;
+  formaPagamento?: string;
+  condicoesPagamento?: string;
+  pagamentoPersonalizado?: string;
+  prazoEntrega?: string;
+  incluirImpostos: boolean;
+  detalhesImpostos?: ConfiguracaoImpostos;
+  itens: ItemOrcamento[];
+}
+
+export interface ConfiguracaoEmpresa {
+  id: number;
+  nome: string;
+  documento?: string;
+  email?: string;
+  telefone?: string;
+  endereco?: string;
+  logo?: string;
+  configuracaoImpostosPadrao?: ConfiguracaoImpostos;
+  moeda: string;
+  criadoEm: Date;
+}
+
+export interface EstatisticasDashboard {
+  orcamentosAtivos: number;
+  totalMensal: number;
+  taxaConversao: number;
+  clientesAtivos: number;
+  orcamentosRecentes: Orcamento[];
+  clientesPrincipais: Array<{
+    id: number;
+    nome: string;
+    tipo: string;
+    total: number;
+    taxaConversao: number;
+  }>;
+  produtosPopulares: Array<{
+    id: number;
+    nome: string;
+    tipo: string;
+    quantidade: number;
+    valor: number;
+  }>;
+  dadosGraficoBarras: Array<{
+    [key: string]: string | number;
+  }>;
+  dadosGraficoLinha: Array<{
+    mes: string;
+    Orçamentos: number;
+    Aprovados: number;
+  }>;
+  tendenciaOrcamentos: number;
+  tendenciaTotalMensal: number;
+  tendenciaTaxaConversao: number;
+  tendenciaClientesAtivos: number;
+}
+
+// Tipos para o gerador de PDF
+export interface Quote {
+  id: number | string;
+  title: string;
+  createdAt: Date;
+  validUntil: Date;
+  status: StatusOrcamento;
+  includeTaxes: boolean;
+  taxDetails?: {
+    iss: number;
+    pis: number;
+    cofins: number;
+  };
+  paymentMethod?: string;
+  paymentTerms?: string;
+  customPayment?: string;
+  deliveryTime?: string;
+  notes?: string;
+  items: QuoteItem[];
+}
+
+export interface QuoteItem {
+  product?: {
+    name: string;
+    description?: string;
+  };
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  subtotal: number;
+}
+
+export interface Client {
   name: string;
   document?: string;
   email?: string;
   phone?: string;
   address?: string;
-  createdAt: Date;
-}
-
-export interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  type: 'product' | 'service';
-  createdAt: Date;
-}
-
-export interface QuoteItem {
-  id: number;
-  productId: number;
-  product?: Product;
-  quantity: number;
-  unitPrice: number;
-  discount: number;
-  description?: string;
-  subtotal: number;
-}
-
-export type QuoteStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'analyzing';
-
-export interface TaxSettings {
-  iss: number;
-  pis: number;
-  cofins: number;
-  others?: string;
-}
-
-export interface Quote {
-  id: number;
-  title: string;
-  clientId: number;
-  client?: Client;
-  createdAt: Date;
-  validUntil: Date;
-  status: QuoteStatus;
-  total: number;
-  notes?: string;
-  paymentMethod?: string;
-  paymentTerms?: string;
-  customPayment?: string;
-  deliveryTime?: string;
-  includeTaxes: boolean;
-  taxDetails?: TaxSettings;
-  items: QuoteItem[];
 }
 
 export interface CompanySettings {
-  id: number;
   name: string;
   document?: string;
   email?: string;
   phone?: string;
   address?: string;
   logo?: string;
-  defaultTaxSettings?: TaxSettings;
-  currency: string;
-  createdAt: Date;
-}
-
-export interface DashboardStats {
-  activeQuotes: number;
-  monthlyTotal: number;
-  conversionRate: number;
-  activeClients: number;
-  recentQuotes: Quote[];
-  topProducts: {
-    name: string;
-    count: number;
-    percentage: number;
-  }[];
-  topClients: {
-    id: number;
-    name: string;
-    type: string;
-    total: number;
-    conversionRate: number;
-  }[];
 }

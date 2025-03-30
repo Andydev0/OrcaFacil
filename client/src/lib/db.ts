@@ -1,318 +1,612 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { Client, Product, Quote, QuoteItem, CompanySettings } from '@/types';
+import { Cliente, Produto, Orcamento, ItemOrcamento, ConfiguracaoEmpresa, EstatisticasDashboard } from '@/types';
 
-interface BudgetAppDB extends DBSchema {
-  clients: {
+interface BancoDadosOrcamento extends DBSchema {
+  clientes: {
     key: number;
-    value: Client;
-    indexes: { 'by-name': string };
+    value: Cliente;
+    indexes: { 'por-nome': string };
   };
-  products: {
+  produtos: {
     key: number;
-    value: Product;
-    indexes: { 'by-name': string; 'by-type': string };
+    value: Produto;
+    indexes: { 'por-nome': string; 'por-tipo': string };
   };
-  quotes: {
+  orcamentos: {
     key: number;
-    value: Quote;
-    indexes: { 'by-client': number; 'by-status': string; 'by-date': Date };
+    value: Orcamento;
+    indexes: { 'por-cliente': number; 'por-status': string; 'por-data': Date };
   };
-  quoteItems: {
+  itensOrcamento: {
     key: number;
-    value: QuoteItem;
-    indexes: { 'by-quote': number };
+    value: ItemOrcamento;
+    indexes: { 'por-orcamento': number };
   };
-  companySettings: {
+  configuracaoEmpresa: {
     key: number;
-    value: CompanySettings;
+    value: ConfiguracaoEmpresa;
   };
 }
 
-let db: IDBPDatabase<BudgetAppDB>;
+// Definir tipos de stores para garantir tipagem correta
+type NomesStore = 'clientes' | 'produtos' | 'orcamentos' | 'itensOrcamento' | 'configuracaoEmpresa';
+type ValoresStore = {
+  clientes: Cliente;
+  produtos: Produto;
+  orcamentos: Orcamento;
+  itensOrcamento: ItemOrcamento;
+  configuracaoEmpresa: ConfiguracaoEmpresa;
+};
 
-export const initDB = async (): Promise<IDBPDatabase<BudgetAppDB>> => {
+let db: IDBPDatabase<BancoDadosOrcamento>;
+
+export const inicializarBD = async (): Promise<IDBPDatabase<BancoDadosOrcamento>> => {
   if (db) return db;
 
-  db = await openDB<BudgetAppDB>('budget-app-db', 1, {
+  db = await openDB<BancoDadosOrcamento>('orcamento-app-db', 1, {
     upgrade(db) {
-      // Create clients store
-      const clientStore = db.createObjectStore('clients', { keyPath: 'id', autoIncrement: true });
-      clientStore.createIndex('by-name', 'name');
+      // Criar store de clientes
+      const storeClientes = db.createObjectStore('clientes', { keyPath: 'id', autoIncrement: true });
+      storeClientes.createIndex('por-nome', 'nome');
 
-      // Create products store
-      const productStore = db.createObjectStore('products', { keyPath: 'id', autoIncrement: true });
-      productStore.createIndex('by-name', 'name');
-      productStore.createIndex('by-type', 'type');
+      // Criar store de produtos
+      const storeProdutos = db.createObjectStore('produtos', { keyPath: 'id', autoIncrement: true });
+      storeProdutos.createIndex('por-nome', 'nome');
+      storeProdutos.createIndex('por-tipo', 'tipo');
 
-      // Create quotes store
-      const quoteStore = db.createObjectStore('quotes', { keyPath: 'id', autoIncrement: true });
-      quoteStore.createIndex('by-client', 'clientId');
-      quoteStore.createIndex('by-status', 'status');
-      quoteStore.createIndex('by-date', 'createdAt');
+      // Criar store de orçamentos
+      const storeOrcamentos = db.createObjectStore('orcamentos', { keyPath: 'id', autoIncrement: true });
+      storeOrcamentos.createIndex('por-cliente', 'clienteId');
+      storeOrcamentos.createIndex('por-status', 'status');
+      storeOrcamentos.createIndex('por-data', 'criadoEm');
 
-      // Create quote items store
-      const quoteItemStore = db.createObjectStore('quoteItems', { keyPath: 'id', autoIncrement: true });
-      quoteItemStore.createIndex('by-quote', 'quoteId');
+      // Criar store de itens de orçamento
+      const storeItensOrcamento = db.createObjectStore('itensOrcamento', { keyPath: 'id', autoIncrement: true });
+      storeItensOrcamento.createIndex('por-orcamento', 'orcamentoId');
 
-      // Create company settings store
-      db.createObjectStore('companySettings', { keyPath: 'id', autoIncrement: true });
+      // Criar store de configurações da empresa
+      db.createObjectStore('configuracaoEmpresa', { keyPath: 'id', autoIncrement: true });
     },
   });
 
   return db;
 };
 
-// Generic CRUD operations
-export const getAll = async <T>(storeName: keyof BudgetAppDB): Promise<T[]> => {
-  const db = await initDB();
-  return db.getAll(storeName);
+// Operações CRUD genéricas
+export const buscarTodos = async <T>(nomeStore: NomesStore): Promise<T[]> => {
+  const db = await inicializarBD();
+  return db.getAll(nomeStore) as unknown as T[];
 };
 
-export const get = async <T>(storeName: keyof BudgetAppDB, id: number): Promise<T | undefined> => {
-  const db = await initDB();
-  return db.get(storeName, id);
+export const buscarPorId = async <T>(nomeStore: NomesStore, id: number): Promise<T | undefined> => {
+  const db = await inicializarBD();
+  return db.get(nomeStore, id) as unknown as T | undefined;
 };
 
-export const add = async <T>(storeName: keyof BudgetAppDB, item: Omit<T, 'id'>): Promise<number> => {
-  const db = await initDB();
-  return db.add(storeName, item as any);
+export const adicionar = async <T>(nomeStore: NomesStore, item: Omit<T, 'id'>): Promise<number> => {
+  const db = await inicializarBD();
+  return db.add(nomeStore, item as any);
 };
 
-export const update = async <T extends { id: number }>(storeName: keyof BudgetAppDB, item: T): Promise<number> => {
-  const db = await initDB();
-  await db.put(storeName, item);
+export const atualizar = async <T extends { id: number }>(nomeStore: NomesStore, item: T): Promise<number> => {
+  const db = await inicializarBD();
+  await db.put(nomeStore, item as any);
   return item.id;
 };
 
-export const remove = async (storeName: keyof BudgetAppDB, id: number): Promise<void> => {
-  const db = await initDB();
-  await db.delete(storeName, id);
+export const remover = async (nomeStore: NomesStore, id: number): Promise<void> => {
+  const db = await inicializarBD();
+  await db.delete(nomeStore, id);
 };
 
-// Specific operations for quotes with related items
-export const getQuoteWithItems = async (quoteId: number): Promise<Quote | null> => {
-  const db = await initDB();
-  const quote = await db.get('quotes', quoteId);
-  if (!quote) return null;
+// Funções auxiliares para operações comuns no banco de dados
+export const getAll = async <T>(store: "clientes" | "produtos" | "orcamentos" | "itensOrcamento" | "configuracaoEmpresa"): Promise<T[]> => {
+  const db = await inicializarBD();
+  const result = await db.getAll(store);
+  return result as unknown as T[];
+};
 
-  const tx = db.transaction(['quoteItems', 'products', 'clients'], 'readonly');
-  const items = await tx.objectStore('quoteItems').index('by-quote').getAll(quoteId);
+export const get = async <T>(store: "clientes" | "produtos" | "orcamentos" | "itensOrcamento" | "configuracaoEmpresa", id: number): Promise<T | undefined> => {
+  const db = await inicializarBD();
+  const result = await db.get(store, id);
+  return result as unknown as T | undefined;
+};
+
+export const add = async <T>(store: "clientes" | "produtos" | "orcamentos" | "itensOrcamento" | "configuracaoEmpresa", item: T): Promise<number> => {
+  const db = await inicializarBD();
+  return db.add(store, item as unknown as Cliente | Produto | Orcamento | ItemOrcamento | ConfiguracaoEmpresa);
+};
+
+export const update = async <T extends { id: number }>(store: "clientes" | "produtos" | "orcamentos" | "itensOrcamento" | "configuracaoEmpresa", item: T): Promise<void> => {
+  const db = await inicializarBD();
+  await db.put(store, item as unknown as Cliente | Produto | Orcamento | ItemOrcamento | ConfiguracaoEmpresa);
+};
+
+export const remove = async (store: "clientes" | "produtos" | "orcamentos" | "itensOrcamento" | "configuracaoEmpresa", id: number): Promise<void> => {
+  const db = await inicializarBD();
+  await db.delete(store, id);
+};
+
+// Operações específicas para orçamentos com itens relacionados
+export const buscarOrcamentoComItens = async (orcamentoId: number): Promise<Orcamento | null> => {
+  const db = await inicializarBD();
+  const orcamento = await db.get('orcamentos', orcamentoId);
+  if (!orcamento) return null;
+
+  const tx = db.transaction(['itensOrcamento', 'produtos', 'clientes'], 'readonly');
+  const itens = await tx.objectStore('itensOrcamento').index('por-orcamento').getAll(orcamentoId);
   
-  // Get products for each item
-  for (const item of items) {
-    item.product = await tx.objectStore('products').get(item.productId);
+  // Buscar produtos para cada item
+  for (const item of itens) {
+    item.produto = await tx.objectStore('produtos').get(item.produtoId);
   }
   
-  // Get client
-  quote.client = await tx.objectStore('clients').get(quote.clientId);
-  quote.items = items;
+  // Buscar cliente
+  orcamento.cliente = await tx.objectStore('clientes').get(orcamento.clienteId);
+  orcamento.itens = itens;
   
-  return quote;
+  return orcamento;
 };
 
-export const saveQuoteWithItems = async (quote: Omit<Quote, 'id'> & { id?: number }, items: Omit<QuoteItem, 'id' | 'quoteId'>[]): Promise<number> => {
-  const db = await initDB();
-  const tx = db.transaction(['quotes', 'quoteItems'], 'readwrite');
+export const salvarOrcamentoComItens = async (
+  orcamento: Partial<Orcamento> & { id?: number; criadoEm: Date; clienteId: number; titulo: string; validoAte: Date; status: Orcamento['status']; total: number; incluirImpostos: boolean }, 
+  itens: Array<Omit<ItemOrcamento, 'id' | 'orcamentoId'> & { id?: number }>
+): Promise<number> => {
+  const db = await inicializarBD();
   
-  let quoteId: number;
+  let orcamentoId: number;
   
-  if (quote.id) {
-    await tx.objectStore('quotes').put(quote);
-    quoteId = quote.id;
+  // Primeiro, salvar ou atualizar o orçamento
+  if (orcamento.id) {
+    // Atualizar orçamento existente
+    const txOrcamento = db.transaction('orcamentos', 'readwrite');
+    // Garantir que o objeto tenha uma propriedade 'itens' válida
+    const orcamentoCompleto = {
+      ...orcamento,
+      itens: [] // Inicializar com array vazio, os itens serão adicionados separadamente
+    } as Orcamento;
+    await txOrcamento.objectStore('orcamentos').put(orcamentoCompleto);
+    await txOrcamento.done;
+    orcamentoId = orcamento.id;
     
-    // Delete existing items for this quote
-    const existingItems = await db.getAllKeysFromIndex('quoteItems', 'by-quote', quoteId);
-    for (const itemId of existingItems) {
-      await tx.objectStore('quoteItems').delete(itemId);
+    // Excluir itens existentes para este orçamento em uma transação separada
+    const itensExistentes = await db.getAllKeysFromIndex('itensOrcamento', 'por-orcamento', orcamentoId);
+    if (itensExistentes.length > 0) {
+      const txDeletar = db.transaction('itensOrcamento', 'readwrite');
+      for (const itemId of itensExistentes) {
+        txDeletar.objectStore('itensOrcamento').delete(itemId);
+      }
+      await txDeletar.done;
     }
   } else {
-    quoteId = await tx.objectStore('quotes').add({
-      ...quote,
-      createdAt: new Date(),
-    });
+    // Criar novo orçamento
+    const txNovo = db.transaction('orcamentos', 'readwrite');
+    // Garantir que o objeto tenha uma propriedade 'itens' válida
+    const orcamentoCompleto = {
+      ...orcamento,
+      itens: [] // Inicializar com array vazio, os itens serão adicionados separadamente
+    };
+    // Remover explicitamente a propriedade id para que o IndexedDB gere um novo
+    delete (orcamentoCompleto as any).id;
+    
+    orcamentoId = await txNovo.objectStore('orcamentos').add(orcamentoCompleto as unknown as Orcamento);
+    await txNovo.done;
   }
   
-  // Add new items
-  for (const item of items) {
-    await tx.objectStore('quoteItems').add({
-      ...item,
-      quoteId
-    });
+  // Adicionar novos itens em uma transação separada
+  if (itens.length > 0) {
+    const txItens = db.transaction('itensOrcamento', 'readwrite');
+    for (const item of itens) {
+      // Garantir que o objeto tenha as propriedades necessárias
+      const itemCompleto = {
+        ...item,
+        orcamentoId,
+        subtotal: (item.quantidade || 0) * (item.precoUnitario || 0) * (1 - (item.desconto || 0) / 100)
+      };
+      // Remover explicitamente a propriedade id para que o IndexedDB gere um novo
+      delete itemCompleto.id;
+      
+      txItens.objectStore('itensOrcamento').add(itemCompleto as unknown as ItemOrcamento);
+    }
+    await txItens.done;
   }
   
-  await tx.done;
-  return quoteId;
+  return orcamentoId;
 };
 
-// Get company settings or create default
-export const getCompanySettings = async (): Promise<CompanySettings> => {
-  const db = await initDB();
-  const settings = await db.getAll('companySettings');
+export const getEstatisticasDashboard = async (): Promise<EstatisticasDashboard> => {
+  const db = await inicializarBD();
   
-  if (settings.length === 0) {
-    // Create default settings
-    const defaultSettings: Omit<CompanySettings, 'id' | 'createdAt'> = {
-      name: 'Minha Empresa',
-      currency: 'BRL',
-      defaultTaxSettings: {
+  // Obter contagens
+  const clientes = await db.count('clientes');
+  const produtos = await db.count('produtos');
+  const orcamentos = await db.count('orcamentos');
+  
+  // Obter orçamentos recentes
+  const orcamentosRecentes = await db.getAllFromIndex('orcamentos', 'por-data', IDBKeyRange.upperBound(new Date()));
+  
+  // Calcular valor total dos orçamentos
+  let valorTotal = 0;
+  for (const orcamento of orcamentosRecentes) {
+    valorTotal += orcamento.total || 0;
+  }
+  
+  // Valores padrão para satisfazer o tipo EstatisticasDashboard
+  return {
+    orcamentosAtivos: orcamentos,
+    totalMensal: valorTotal,
+    taxaConversao: 0,
+    clientesAtivos: clientes,
+    orcamentosRecentes: orcamentosRecentes.slice(0, 5),
+    clientesPrincipais: [],
+    produtosPopulares: [],
+    dadosGraficoBarras: [{ mes: 'Jan' }],
+    dadosGraficoLinha: [{ mes: 'Jan', Orçamentos: 0, Aprovados: 0 }],
+    tendenciaOrcamentos: 0,
+    tendenciaTotalMensal: 0,
+    tendenciaTaxaConversao: 0,
+    tendenciaClientesAtivos: 0
+  };
+};
+
+export const getConfiguracaoEmpresa = async (): Promise<ConfiguracaoEmpresa | null> => {
+  const db = await inicializarBD();
+  const configuracoes = await db.getAll('configuracaoEmpresa');
+  return configuracoes.length > 0 ? configuracoes[0] : null;
+};
+
+// Obter configurações da empresa ou criar padrão
+export const buscarConfiguracaoEmpresa = async (): Promise<ConfiguracaoEmpresa> => {
+  try {
+    const db = await inicializarBD();
+    const configuracoes = await db.getAll('configuracaoEmpresa');
+    
+    if (configuracoes.length === 0) {
+      // Criar configurações padrão
+      const configuracoesPadrao: ConfiguracaoEmpresa = {
+        id: 1, // ID fixo para evitar problemas
+        nome: 'Minha Empresa',
+        moeda: 'BRL',
+        configuracaoImpostosPadrao: {
+          iss: 3,
+          pis: 0.65,
+          cofins: 3
+        },
+        criadoEm: new Date()
+      };
+      
+      try {
+        // Tenta adicionar com ID fixo
+        await db.put('configuracaoEmpresa', configuracoesPadrao);
+        return configuracoesPadrao;
+      } catch (error) {
+        console.error("Erro ao salvar configuração padrão:", error);
+        // Retorna o objeto mesmo se falhar ao salvar
+        return configuracoesPadrao;
+      }
+    }
+    
+    return configuracoes[0];
+  } catch (error) {
+    console.error("Erro ao buscar configuração da empresa:", error);
+    // Retorna uma configuração padrão em caso de erro
+    return {
+      id: 1,
+      nome: 'Minha Empresa',
+      moeda: 'BRL',
+      configuracaoImpostosPadrao: {
         iss: 3,
         pis: 0.65,
         cofins: 3
-      }
-    };
-    
-    const id = await db.add('companySettings', {
-      ...defaultSettings,
-      createdAt: new Date()
-    });
-    
-    return {
-      ...defaultSettings,
-      id,
-      createdAt: new Date()
+      },
+      criadoEm: new Date()
     };
   }
-  
-  return settings[0];
 };
 
-// Search functions
-export const searchClients = async (query: string): Promise<Client[]> => {
-  const db = await initDB();
-  const clients = await db.getAll('clients');
-  if (!query) return clients;
+// Atualizar configurações da empresa
+export const atualizarConfiguracaoEmpresa = async (configuracao: ConfiguracaoEmpresa): Promise<void> => {
+  try {
+    const db = await inicializarBD();
+    await db.put('configuracaoEmpresa', configuracao);
+  } catch (error) {
+    console.error("Erro ao atualizar configuração da empresa:", error);
+    throw error;
+  }
+};
+
+// Funções de busca
+export const buscarClientes = async (consulta: string): Promise<Cliente[]> => {
+  const db = await inicializarBD();
+  const clientes = await db.getAll('clientes');
+  if (!consulta) return clientes;
   
-  const lowerQuery = query.toLowerCase();
-  return clients.filter(client => 
-    client.name.toLowerCase().includes(lowerQuery) ||
-    (client.document && client.document.includes(query)) ||
-    (client.email && client.email.toLowerCase().includes(lowerQuery))
+  const consultaMinuscula = consulta.toLowerCase();
+  return clientes.filter(cliente => 
+    cliente.nome.toLowerCase().includes(consultaMinuscula) ||
+    (cliente.documento && cliente.documento.includes(consulta)) ||
+    (cliente.email && cliente.email.toLowerCase().includes(consultaMinuscula))
   );
 };
 
-export const searchProducts = async (query: string, type?: 'product' | 'service'): Promise<Product[]> => {
-  const db = await initDB();
-  let products: Product[] = [];
+export const buscarProdutos = async (consulta: string, tipo?: 'produto' | 'servico'): Promise<Produto[]> => {
+  const db = await inicializarBD();
+  let produtos: Produto[] = [];
   
-  if (type) {
-    products = await db.getAllFromIndex('products', 'by-type', type);
+  if (tipo) {
+    produtos = await db.getAllFromIndex('produtos', 'por-tipo', tipo);
   } else {
-    products = await db.getAll('products');
+    produtos = await db.getAll('produtos');
   }
   
-  if (!query) return products;
+  if (!consulta) return produtos;
   
-  const lowerQuery = query.toLowerCase();
-  return products.filter(product => 
-    product.name.toLowerCase().includes(lowerQuery) ||
-    (product.description && product.description.toLowerCase().includes(lowerQuery))
+  const consultaMinuscula = consulta.toLowerCase();
+  return produtos.filter(produto => 
+    produto.nome.toLowerCase().includes(consultaMinuscula) ||
+    (produto.descricao?.toLowerCase().includes(consultaMinuscula) || false)
   );
 };
 
-// Get dashboard statistics
-export const getDashboardStats = async () => {
-  const db = await initDB();
+// Obter estatísticas do dashboard
+export const obterEstatisticasDashboard = async (): Promise<EstatisticasDashboard> => {
+  // Obter todos os orçamentos para análise
+  const orcamentos = await getAll<Orcamento>("orcamentos");
+  const clientes = await getAll<Cliente>("clientes");
+  const produtos = await getAll<Produto>("produtos");
+  const itensOrcamento = await getAll<ItemOrcamento>("itensOrcamento");
   
-  // Get quotes
-  const allQuotes = await db.getAll('quotes');
-  const activeQuotes = allQuotes.filter(q => q.status !== 'rejected' && q.status !== 'draft').length;
+  // Calcular orçamentos ativos (rascunho, pendentes, em análise ou aprovados)
+  const orcamentosAtivos = orcamentos.filter(o => 
+    o.status === 'rascunho' || o.status === 'pendente' || o.status === 'analisando' || o.status === 'aprovado'
+  ).length;
   
-  // Calculate monthly total
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthlyQuotes = allQuotes.filter(q => new Date(q.createdAt) >= firstDayOfMonth);
-  const monthlyTotal = monthlyQuotes.reduce((sum, quote) => sum + (quote.total || 0), 0);
-  
-  // Calculate conversion rate
-  const totalFinalized = allQuotes.filter(q => q.status === 'approved' || q.status === 'rejected').length;
-  const approvedQuotes = allQuotes.filter(q => q.status === 'approved').length;
-  const conversionRate = totalFinalized ? (approvedQuotes / totalFinalized) * 100 : 0;
-  
-  // Get active clients
-  const clients = await db.getAll('clients');
-  const activeClientIds = new Set(
-    allQuotes
-      .filter(q => q.status !== 'rejected' && q.status !== 'draft')
-      .map(q => q.clientId)
+  // Calcular total mensal (orçamentos deste mês)
+  const dataAtual = new Date();
+  const inicioMes = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1);
+  const orcamentosMes = orcamentos.filter(o => 
+    new Date(o.criadoEm) >= inicioMes
   );
+  const totalMensal = orcamentosMes.reduce((total, o) => total + (o.total || 0), 0);
   
-  // Get recent quotes with client information
-  const sortedQuotes = [...allQuotes].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-  const recentQuotes = sortedQuotes.slice(0, 5);
+  // Calcular dados do mês anterior para comparação
+  const inicioMesAnterior = new Date(dataAtual.getFullYear(), dataAtual.getMonth() - 1, 1);
+  const fimMesAnterior = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 0);
   
-  for (const quote of recentQuotes) {
-    quote.client = clients.find(c => c.id === quote.clientId);
+  const orcamentosMesAnterior = orcamentos.filter(o => {
+    const data = new Date(o.criadoEm);
+    return data >= inicioMesAnterior && data <= fimMesAnterior;
+  });
+  
+  const orcamentosAtivosMesAnterior = orcamentosMesAnterior.filter(o => 
+    o.status === 'rascunho' || o.status === 'pendente' || o.status === 'analisando' || o.status === 'aprovado'
+  ).length;
+  
+  const totalMensalAnterior = orcamentosMesAnterior.reduce((total, o) => total + (o.total || 0), 0);
+  
+  // Calcular tendências
+  const tendenciaOrcamentos = orcamentosAtivosMesAnterior > 0 
+    ? ((orcamentosAtivos - orcamentosAtivosMesAnterior) / orcamentosAtivosMesAnterior) * 100 
+    : 0;
     
-    // Get items for this quote
-    const items = await db.getAllFromIndex('quoteItems', 'by-quote', quote.id);
-    quote.items = items;
-  }
+  const tendenciaTotalMensal = totalMensalAnterior > 0 
+    ? ((totalMensal - totalMensalAnterior) / totalMensalAnterior) * 100 
+    : 0;
   
-  // Get top products
-  const allItems = await db.getAll('quoteItems');
-  const productCounts = new Map<number, number>();
+  // Calcular taxa de conversão (orçamentos aprovados / total finalizados)
+  const orcamentosFinalizados = orcamentos.filter(o => 
+    o.status === 'aprovado' || o.status === 'recusado'
+  );
+  const orcamentosAprovados = orcamentos.filter(o => o.status === 'aprovado');
+  const taxaConversao = orcamentosFinalizados.length > 0 
+    ? (orcamentosAprovados.length / orcamentosFinalizados.length) * 100 
+    : 0;
+    
+  // Calcular taxa de conversão do mês anterior
+  const orcamentosFinalizadosMesAnterior = orcamentosMesAnterior.filter(o => 
+    o.status === 'aprovado' || o.status === 'recusado'
+  );
+  const orcamentosAprovadosMesAnterior = orcamentosMesAnterior.filter(o => 
+    o.status === 'aprovado'
+  );
+  const taxaConversaoMesAnterior = orcamentosFinalizadosMesAnterior.length > 0 
+    ? (orcamentosAprovadosMesAnterior.length / orcamentosFinalizadosMesAnterior.length) * 100 
+    : 0;
+    
+  const tendenciaTaxaConversao = taxaConversaoMesAnterior > 0 
+    ? ((taxaConversao - taxaConversaoMesAnterior) / taxaConversaoMesAnterior) * 100 
+    : 0;
   
-  for (const item of allItems) {
-    const count = productCounts.get(item.productId) || 0;
-    productCounts.set(item.productId, count + 1);
-  }
+  // Calcular clientes ativos (com orçamentos ativos)
+  const clientesIds = new Set(
+    orcamentos
+      .filter(o => o.status === 'rascunho' || o.status === 'pendente' || o.status === 'analisando' || o.status === 'aprovado')
+      .map(o => o.clienteId)
+      .filter(id => id) // Filtra IDs nulos ou indefinidos
+  );
+  const clientesAtivos = clientesIds.size;
   
-  const products = await db.getAll('products');
-  const productCountArray = Array.from(productCounts.entries())
-    .map(([productId, count]) => {
-      const product = products.find(p => p.id === productId);
-      return {
-        id: productId,
-        name: product?.name || 'Produto desconhecido',
-        count
-      };
-    })
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+  // Calcular clientes ativos do mês anterior
+  const clientesIdsMesAnterior = new Set(
+    orcamentosMesAnterior
+      .filter(o => o.status === 'rascunho' || o.status === 'pendente' || o.status === 'analisando' || o.status === 'aprovado')
+      .map(o => o.clienteId)
+      .filter(id => id)
+  );
+  const clientesAtivosMesAnterior = clientesIdsMesAnterior.size;
   
-  const maxCount = Math.max(...productCountArray.map(p => p.count));
+  const tendenciaClientesAtivos = clientesAtivosMesAnterior > 0 
+    ? ((clientesAtivos - clientesAtivosMesAnterior) / clientesAtivosMesAnterior) * 100 
+    : 0;
   
-  const topProducts = productCountArray.map(p => ({
-    name: p.name,
-    count: p.count,
-    percentage: (p.count / maxCount) * 100
-  }));
-  
-  // Get top clients
-  const clientTotals = new Map<number, { total: number; quotes: number; approved: number }>();
-  
-  for (const quote of allQuotes) {
-    const current = clientTotals.get(quote.clientId) || { total: 0, quotes: 0, approved: 0 };
-    clientTotals.set(quote.clientId, {
-      total: current.total + (quote.total || 0),
-      quotes: current.quotes + 1,
-      approved: current.approved + (quote.status === 'approved' ? 1 : 0)
+  // Obter orçamentos recentes ordenados por data
+  const orcamentosRecentes = [...orcamentos]
+    .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+    .slice(0, 5)
+    .map(o => {
+      // Adicionar informações do cliente
+      const cliente = clientes.find(c => c.id === o.clienteId);
+      return { ...o, cliente };
     });
-  }
   
-  const topClients = Array.from(clientTotals.entries())
-    .map(([clientId, stats]) => {
-      const client = clients.find(c => c.id === clientId);
+  // Calcular principais clientes (por valor total de orçamentos)
+  const clientesMap = new Map<number, {
+    id: number;
+    total: number;
+    orcamentos: number;
+    aprovados: number;
+  }>();
+  
+  orcamentos.forEach(o => {
+    if (!clientesMap.has(o.clienteId)) {
+      clientesMap.set(o.clienteId, {
+        id: o.clienteId,
+        total: 0,
+        orcamentos: 0,
+        aprovados: 0
+      });
+    }
+    
+    const clienteStats = clientesMap.get(o.clienteId);
+    if (clienteStats) {
+      clienteStats.total += (o.total || 0);
+      clienteStats.orcamentos += 1;
+      if (o.status === 'aprovado') {
+        clienteStats.aprovados += 1;
+      }
+    }
+  });
+  
+  const clientesPrincipais = Array.from(clientesMap.entries())
+    .map(([id, stats]) => {
+      const cliente = clientes.find(c => c.id === id);
       return {
-        id: clientId,
-        name: client?.name || 'Cliente desconhecido',
-        type: 'Empresa',
+        id,
+        nome: cliente?.nome || 'Cliente não encontrado',
+        tipo: cliente?.documento && cliente.documento.length > 14 ? 'Empresa' : 'Pessoa',
         total: stats.total,
-        conversionRate: stats.quotes ? (stats.approved / stats.quotes) * 100 : 0
+        taxaConversao: stats.orcamentos > 0 
+          ? (stats.aprovados / stats.orcamentos) * 100 
+          : 0
       };
     })
     .sort((a, b) => b.total - a.total)
-    .slice(0, 4);
+    .slice(0, 5);
+  
+  // Calcular produtos populares (por quantidade em orçamentos)
+  const produtosMap = new Map<number, {
+    id: number;
+    quantidade: number;
+    valor: number;
+  }>();
+  
+  itensOrcamento.forEach(item => {
+    if (!produtosMap.has(item.produtoId)) {
+      produtosMap.set(item.produtoId, {
+        id: item.produtoId,
+        quantidade: 0,
+        valor: 0
+      });
+    }
+    
+    const produtoStats = produtosMap.get(item.produtoId);
+    if (produtoStats) {
+      produtoStats.quantidade += (item.quantidade || 0);
+      produtoStats.valor += (item.subtotal || 0);
+    }
+  });
+  
+  const produtosPopulares = Array.from(produtosMap.entries())
+    .map(([id, stats]) => {
+      const produto = produtos.find(p => p.id === id);
+      return {
+        id,
+        nome: produto?.nome || 'Produto não encontrado',
+        tipo: produto?.tipo || 'produto',
+        quantidade: stats.quantidade,
+        valor: stats.valor
+      };
+    })
+    .sort((a, b) => b.quantidade - a.quantidade)
+    .slice(0, 5);
+  
+  // Dados para gráficos
+  // Dados para gráfico de barras - produtos mais vendidos por mês
+  const ultimosSeisMeses = Array.from({ length: 6 }, (_, i) => {
+    const data = new Date();
+    data.setMonth(data.getMonth() - i);
+    return {
+      mes: data.toLocaleDateString('pt-BR', { month: 'short' }),
+      mesNum: data.getMonth(),
+      ano: data.getFullYear()
+    };
+  }).reverse();
+  
+  const dadosGraficoBarras = ultimosSeisMeses.map(periodo => {
+    const resultado: { [key: string]: string | number } = { mes: periodo.mes };
+    
+    // Pegar os 3 produtos mais populares para mostrar no gráfico
+    const top3Produtos = produtosPopulares.slice(0, 3);
+    
+    top3Produtos.forEach(produto => {
+      // Calcular quantidade vendida deste produto neste mês
+      const quantidadeMes = itensOrcamento
+        .filter(item => {
+          const orcamento = orcamentos.find(o => o.id === item.orcamentoId);
+          if (!orcamento) return false;
+          
+          const dataOrcamento = new Date(orcamento.criadoEm);
+          return item.produtoId === produto.id && 
+                 dataOrcamento.getMonth() === periodo.mesNum && 
+                 dataOrcamento.getFullYear() === periodo.ano;
+        })
+        .reduce((sum, item) => sum + (item.quantidade || 0), 0);
+      
+      resultado[produto.nome] = quantidadeMes;
+    });
+    
+    return resultado;
+  });
+  
+  // Dados para gráfico de linha - orçamentos por mês
+  const dadosGraficoLinha = ultimosSeisMeses.map(periodo => {
+    // Contar orçamentos deste mês
+    const orcamentosMes = orcamentos.filter(o => {
+      const dataOrcamento = new Date(o.criadoEm);
+      return dataOrcamento.getMonth() === periodo.mesNum && 
+             dataOrcamento.getFullYear() === periodo.ano;
+    });
+    
+    // Contar aprovados
+    const aprovadosMes = orcamentosMes.filter(o => o.status === 'aprovado');
+    
+    return {
+      mes: periodo.mes,
+      Orçamentos: orcamentosMes.length,
+      Aprovados: aprovadosMes.length
+    };
+  });
   
   return {
-    activeQuotes,
-    monthlyTotal,
-    conversionRate,
-    activeClients: activeClientIds.size,
-    recentQuotes,
-    topProducts,
-    topClients
+    orcamentosAtivos,
+    totalMensal,
+    taxaConversao,
+    clientesAtivos,
+    orcamentosRecentes,
+    clientesPrincipais,
+    produtosPopulares,
+    dadosGraficoBarras,
+    dadosGraficoLinha,
+    tendenciaOrcamentos,
+    tendenciaTotalMensal,
+    tendenciaTaxaConversao,
+    tendenciaClientesAtivos
   };
 };
+
+// Manter compatibilidade com código existente
+export const getDashboardStats = obterEstatisticasDashboard;
+
+// Renomear para manter consistência com o AppContext
+export const saveOrcamentoWithItens = salvarOrcamentoComItens;
+export const getOrcamentoComItens = buscarOrcamentoComItens;

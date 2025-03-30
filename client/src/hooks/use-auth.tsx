@@ -21,6 +21,7 @@ type AuthContextType = {
   login: (data: LoginData) => Promise<void>;
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  updateUserProfile?: (updatedUser: User) => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -162,6 +163,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Função para atualizar o perfil do usuário
+  const updateUserProfile = async (updatedUser: User): Promise<void> => {
+    try {
+      setIsLoading(true);
+      
+      // Obter a lista de usuários
+      const users = JSON.parse(localStorage.getItem('budget_app_users') || '[]');
+      
+      // Encontrar e atualizar o usuário na lista
+      const updatedUsers = users.map((u: User) => 
+        u.id === updatedUser.id ? { ...u, name: updatedUser.name, email: updatedUser.email, avatar: updatedUser.avatar } : u
+      );
+      
+      // Salvar a lista atualizada
+      localStorage.setItem('budget_app_users', JSON.stringify(updatedUsers));
+      
+      // Atualizar o usuário atual
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      // Atualizar o estado
+      setUser(updatedUser);
+      
+      toast({
+        title: "Perfil atualizado",
+        description: "Suas informações foram atualizadas com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      setError(error as Error);
+      
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar seu perfil. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -170,7 +211,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         login,
         logout,
-        register
+        register,
+        updateUserProfile
       }}
     >
       {children}

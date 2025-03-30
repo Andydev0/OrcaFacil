@@ -1,261 +1,261 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Client, Product, Quote, QuoteItem, CompanySettings, DashboardStats } from "@/types";
+import { Cliente, Produto, Orcamento, ItemOrcamento, ConfiguracaoEmpresa, EstatisticasDashboard } from "@/types";
 import * as db from "@/lib/db";
 
 interface AppContextType {
-  clients: Client[];
-  products: Product[];
-  quotes: Quote[];
-  companySettings: CompanySettings | null;
-  dashboardStats: DashboardStats | null;
-  loading: boolean;
-  refreshClients: () => Promise<void>;
-  refreshProducts: () => Promise<void>;
-  refreshQuotes: () => Promise<void>;
-  refreshDashboardStats: () => Promise<void>;
-  saveClient: (client: Omit<Client, "id" | "createdAt"> & { id?: number }) => Promise<number>;
-  saveProduct: (product: Omit<Product, "id" | "createdAt"> & { id?: number }) => Promise<number>;
-  saveQuote: (quote: Omit<Quote, "id" | "createdAt"> & { id?: number, items: Array<Omit<QuoteItem, "id" | "quoteId">> }) => Promise<number>;
-  saveCompanySettings: (settings: Partial<CompanySettings>) => Promise<void>;
-  deleteClient: (id: number) => Promise<void>;
-  deleteProduct: (id: number) => Promise<void>;
-  deleteQuote: (id: number) => Promise<void>;
-  getQuoteWithItems: (id: number) => Promise<Quote | null>;
-  error: string | null;
+  clientes: Cliente[];
+  produtos: Produto[];
+  orcamentos: Orcamento[];
+  configuracaoEmpresa: ConfiguracaoEmpresa | null;
+  estatisticasDashboard: EstatisticasDashboard | null;
+  carregando: boolean;
+  atualizarClientes: () => Promise<void>;
+  atualizarProdutos: () => Promise<void>;
+  atualizarOrcamentos: () => Promise<void>;
+  atualizarEstatisticasDashboard: () => Promise<void>;
+  salvarCliente: (cliente: Omit<Cliente, "id" | "criadoEm"> & { id?: number }) => Promise<number>;
+  salvarProduto: (produto: Omit<Produto, "id" | "criadoEm"> & { id?: number }) => Promise<number>;
+  salvarOrcamento: (orcamento: Omit<Orcamento, "id" | "criadoEm"> & { id?: number, itens: Array<Omit<ItemOrcamento, "id" | "orcamentoId">> }) => Promise<number>;
+  salvarConfiguracaoEmpresa: (configuracao: Partial<ConfiguracaoEmpresa>) => Promise<void>;
+  excluirCliente: (id: number) => Promise<void>;
+  excluirProduto: (id: number) => Promise<void>;
+  excluirOrcamento: (id: number) => Promise<void>;
+  getOrcamentoComItens: (id: number) => Promise<Orcamento | null>;
+  erro: string | null;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
+  const [configuracaoEmpresa, setConfiguracaoEmpresa] = useState<ConfiguracaoEmpresa | null>(null);
+  const [estatisticasDashboard, setEstatisticasDashboard] = useState<EstatisticasDashboard | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
   // Initialize database and load initial data
   useEffect(() => {
-    const initializeApp = async () => {
+    const inicializarApp = async () => {
       try {
-        await db.initDB();
+        await db.inicializarBD();
         await Promise.all([
-          refreshClients(),
-          refreshProducts(),
-          refreshQuotes(),
-          refreshCompanySettings(),
-          refreshDashboardStats(),
+          atualizarClientes(),
+          atualizarProdutos(),
+          atualizarOrcamentos(),
+          atualizarConfiguracaoEmpresa(),
+          atualizarEstatisticasDashboard(),
         ]);
-        setLoading(false);
+        setCarregando(false);
       } catch (error) {
         console.error("Failed to initialize app:", error);
-        setError("Falha ao inicializar a aplicação. Por favor, tente novamente.");
-        setLoading(false);
+        setErro("Falha ao inicializar a aplicação. Por favor, tente novamente.");
+        setCarregando(false);
       }
     };
 
-    initializeApp();
+    inicializarApp();
   }, []);
 
-  const refreshClients = async () => {
+  const atualizarClientes = async () => {
     try {
-      const clients = await db.getAll<Client>("clients");
-      setClients(clients);
+      const clientes = await db.getAll<Cliente>("clientes");
+      setClientes(clientes);
     } catch (error) {
-      console.error("Failed to load clients:", error);
-      setError("Falha ao carregar clientes.");
+      console.error("Failed to load clientes:", error);
+      setErro("Falha ao carregar clientes.");
     }
   };
 
-  const refreshProducts = async () => {
+  const atualizarProdutos = async () => {
     try {
-      const products = await db.getAll<Product>("products");
-      setProducts(products);
+      const produtos = await db.getAll<Produto>("produtos");
+      setProdutos(produtos);
     } catch (error) {
-      console.error("Failed to load products:", error);
-      setError("Falha ao carregar produtos e serviços.");
+      console.error("Failed to load produtos:", error);
+      setErro("Falha ao carregar produtos e serviços.");
     }
   };
 
-  const refreshQuotes = async () => {
+  const atualizarOrcamentos = async () => {
     try {
-      const quotes = await db.getAll<Quote>("quotes");
-      setQuotes(quotes);
+      const orcamentos = await db.getAll<Orcamento>("orcamentos");
+      setOrcamentos(orcamentos);
     } catch (error) {
-      console.error("Failed to load quotes:", error);
-      setError("Falha ao carregar orçamentos.");
+      console.error("Failed to load orcamentos:", error);
+      setErro("Falha ao carregar orçamentos.");
     }
   };
 
-  const refreshDashboardStats = async () => {
+  const atualizarEstatisticasDashboard = async () => {
     try {
-      const stats = await db.getDashboardStats();
-      setDashboardStats(stats);
+      const estatisticas = await db.getEstatisticasDashboard();
+      setEstatisticasDashboard(estatisticas);
     } catch (error) {
-      console.error("Failed to load dashboard stats:", error);
-      setError("Falha ao carregar estatísticas do dashboard.");
+      console.error("Failed to load estatisticas dashboard:", error);
+      setErro("Falha ao carregar estatísticas do dashboard.");
     }
   };
 
-  const refreshCompanySettings = async () => {
+  const atualizarConfiguracaoEmpresa = async () => {
     try {
-      const settings = await db.getCompanySettings();
-      setCompanySettings(settings);
+      const configuracao = await db.getConfiguracaoEmpresa();
+      setConfiguracaoEmpresa(configuracao);
     } catch (error) {
-      console.error("Failed to load company settings:", error);
-      setError("Falha ao carregar configurações da empresa.");
+      console.error("Failed to load configuracao empresa:", error);
+      setErro("Falha ao carregar configurações da empresa.");
     }
   };
 
-  const saveClient = async (client: Omit<Client, "id" | "createdAt"> & { id?: number }): Promise<number> => {
+  const salvarCliente = async (cliente: Omit<Cliente, "id" | "criadoEm"> & { id?: number }): Promise<number> => {
     try {
-      let clientId: number;
+      let clienteId: number;
       
-      if (client.id) {
-        await db.update("clients", client as Client);
-        clientId = client.id;
+      if (cliente.id) {
+        await db.update("clientes", cliente as Cliente);
+        clienteId = cliente.id;
       } else {
-        clientId = await db.add("clients", {
-          ...client,
-          createdAt: new Date(),
+        clienteId = await db.add("clientes", {
+          ...cliente,
+          criadoEm: new Date(),
         });
       }
       
-      await refreshClients();
-      await refreshDashboardStats();
+      await atualizarClientes();
+      await atualizarEstatisticasDashboard();
       
-      return clientId;
+      return clienteId;
     } catch (error) {
-      console.error("Failed to save client:", error);
-      setError("Falha ao salvar cliente.");
+      console.error("Failed to save cliente:", error);
+      setErro("Falha ao salvar cliente.");
       throw error;
     }
   };
 
-  const saveProduct = async (product: Omit<Product, "id" | "createdAt"> & { id?: number }): Promise<number> => {
+  const salvarProduto = async (produto: Omit<Produto, "id" | "criadoEm"> & { id?: number }): Promise<number> => {
     try {
-      let productId: number;
+      let produtoId: number;
       
-      if (product.id) {
-        await db.update("products", product as Product);
-        productId = product.id;
+      if (produto.id) {
+        await db.update("produtos", produto as Produto);
+        produtoId = produto.id;
       } else {
-        productId = await db.add("products", {
-          ...product,
-          createdAt: new Date(),
+        produtoId = await db.add("produtos", {
+          ...produto,
+          criadoEm: new Date(),
         });
       }
       
-      await refreshProducts();
-      await refreshDashboardStats();
+      await atualizarProdutos();
+      await atualizarEstatisticasDashboard();
       
-      return productId;
+      return produtoId;
     } catch (error) {
-      console.error("Failed to save product:", error);
-      setError("Falha ao salvar produto.");
+      console.error("Failed to save produto:", error);
+      setErro("Falha ao salvar produto.");
       throw error;
     }
   };
 
-  const saveQuote = async (quote: Omit<Quote, "id" | "createdAt"> & { id?: number, items: Array<Omit<QuoteItem, "id" | "quoteId">> }): Promise<number> => {
+  const salvarOrcamento = async (orcamento: Omit<Orcamento, "id" | "criadoEm"> & { id?: number, itens: Array<Omit<ItemOrcamento, "id" | "orcamentoId">> }): Promise<number> => {
     try {
-      const { items, ...quoteData } = quote;
+      const { itens, ...orcamentoData } = orcamento;
       
-      // Need to create this as a proper object with createdAt and empty items included
-      const quoteToSave: Omit<Quote, "id"> & { id?: number } = {
-        ...quoteData,
-        createdAt: new Date(),
-        items: [],
+      // Need to create this as a proper object with criadoEm and empty itens included
+      const orcamentoToSave: Omit<Orcamento, "id"> & { id?: number } = {
+        ...orcamentoData,
+        criadoEm: new Date(),
+        itens: [],
       };
       
-      const quoteId = await db.saveQuoteWithItems(
-        quoteToSave, 
-        items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          discount: item.discount,
-          description: item.description,
+      const orcamentoId = await db.saveOrcamentoWithItens(
+        orcamentoToSave, 
+        itens.map(item => ({
+          produtoId: item.produtoId,
+          quantidade: item.quantidade,
+          precoUnitario: item.precoUnitario,
+          desconto: item.desconto,
+          descricao: item.descricao,
           subtotal: item.subtotal,
         }))
       );
       
-      await refreshQuotes();
-      await refreshDashboardStats();
+      await atualizarOrcamentos();
+      await atualizarEstatisticasDashboard();
       
-      return quoteId;
+      return orcamentoId;
     } catch (error) {
-      console.error("Failed to save quote:", error);
-      setError("Falha ao salvar orçamento.");
+      console.error("Failed to save orcamento:", error);
+      setErro("Falha ao salvar orçamento.");
       throw error;
     }
   };
 
-  const saveCompanySettings = async (settings: Partial<CompanySettings>): Promise<void> => {
+  const salvarConfiguracaoEmpresa = async (configuracao: Partial<ConfiguracaoEmpresa>): Promise<void> => {
     try {
-      if (companySettings) {
-        await db.update("companySettings", {
-          ...companySettings,
-          ...settings,
+      if (configuracaoEmpresa) {
+        await db.update("configuracaoEmpresa", {
+          ...configuracaoEmpresa,
+          ...configuracao,
         });
       } else {
-        await db.add("companySettings", {
-          ...settings,
-          createdAt: new Date(),
+        await db.add("configuracaoEmpresa", {
+          ...configuracao,
+          criadoEm: new Date(),
         });
       }
       
-      await refreshCompanySettings();
+      await atualizarConfiguracaoEmpresa();
     } catch (error) {
-      console.error("Failed to save company settings:", error);
-      setError("Falha ao salvar configurações da empresa.");
+      console.error("Failed to save configuracao empresa:", error);
+      setErro("Falha ao salvar configurações da empresa.");
       throw error;
     }
   };
 
-  const deleteClient = async (id: number): Promise<void> => {
+  const excluirCliente = async (id: number): Promise<void> => {
     try {
-      await db.remove("clients", id);
-      await refreshClients();
-      await refreshDashboardStats();
+      await db.remove("clientes", id);
+      await atualizarClientes();
+      await atualizarEstatisticasDashboard();
     } catch (error) {
-      console.error("Failed to delete client:", error);
-      setError("Falha ao excluir cliente.");
+      console.error("Failed to delete cliente:", error);
+      setErro("Falha ao excluir cliente.");
       throw error;
     }
   };
 
-  const deleteProduct = async (id: number): Promise<void> => {
+  const excluirProduto = async (id: number): Promise<void> => {
     try {
-      await db.remove("products", id);
-      await refreshProducts();
-      await refreshDashboardStats();
+      await db.remove("produtos", id);
+      await atualizarProdutos();
+      await atualizarEstatisticasDashboard();
     } catch (error) {
-      console.error("Failed to delete product:", error);
-      setError("Falha ao excluir produto.");
+      console.error("Failed to delete produto:", error);
+      setErro("Falha ao excluir produto.");
       throw error;
     }
   };
 
-  const deleteQuote = async (id: number): Promise<void> => {
+  const excluirOrcamento = async (id: number): Promise<void> => {
     try {
-      await db.remove("quotes", id);
-      await refreshQuotes();
-      await refreshDashboardStats();
+      await db.remove("orcamentos", id);
+      await atualizarOrcamentos();
+      await atualizarEstatisticasDashboard();
     } catch (error) {
-      console.error("Failed to delete quote:", error);
-      setError("Falha ao excluir orçamento.");
+      console.error("Failed to delete orcamento:", error);
+      setErro("Falha ao excluir orçamento.");
       throw error;
     }
   };
 
-  const getQuoteWithItems = async (id: number): Promise<Quote | null> => {
+  const getOrcamentoComItens = async (id: number): Promise<Orcamento | null> => {
     try {
-      return await db.getQuoteWithItems(id);
+      return await db.getOrcamentoComItens(id);
     } catch (error) {
-      console.error("Failed to get quote with items:", error);
-      setError("Falha ao carregar orçamento com itens.");
+      console.error("Failed to get orcamento with itens:", error);
+      setErro("Falha ao carregar orçamento com itens.");
       throw error;
     }
   };
@@ -263,25 +263,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
-        clients,
-        products,
-        quotes,
-        companySettings,
-        dashboardStats,
-        loading,
-        error,
-        refreshClients,
-        refreshProducts,
-        refreshQuotes,
-        refreshDashboardStats,
-        saveClient,
-        saveProduct,
-        saveQuote,
-        saveCompanySettings,
-        deleteClient,
-        deleteProduct,
-        deleteQuote,
-        getQuoteWithItems,
+        clientes,
+        produtos,
+        orcamentos,
+        configuracaoEmpresa,
+        estatisticasDashboard,
+        carregando,
+        erro,
+        atualizarClientes,
+        atualizarProdutos,
+        atualizarOrcamentos,
+        atualizarEstatisticasDashboard,
+        salvarCliente,
+        salvarProduto,
+        salvarOrcamento,
+        salvarConfiguracaoEmpresa,
+        excluirCliente,
+        excluirProduto,
+        excluirOrcamento,
+        getOrcamentoComItens,
       }}
     >
       {children}

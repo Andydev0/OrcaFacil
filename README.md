@@ -1,56 +1,110 @@
-# OrcaFacil
+# 📊 OrçaFacil
 
-OrcaFacil é um aplicativo web para criação e gerenciamento de orçamentos para pequenos negócios.
+<div align="center">
+  <img src="https://img.shields.io/badge/Versão-1.0.0-blue" alt="Versão" />
+  <img src="https://img.shields.io/badge/Licença-MIT-green" alt="Licença" />
+  <img src="https://img.shields.io/badge/Status-Em%20Desenvolvimento-orange" alt="Status" />
+</div>
 
-## Funcionalidades
+<div align="center">
+  <p><strong>OrçaFacil</strong> é uma aplicação web moderna para criação e gerenciamento de orçamentos para profissionais autônomos e pequenas empresas.</p>
+</div>
 
-- Dashboard com estatísticas e visão geral do negócio
-- Cadastro e gerenciamento de clientes
-- Cadastro e gerenciamento de produtos e serviços
-- Criação e gerenciamento de orçamentos
-- Geração de PDFs para orçamentos
-- Armazenamento local com IndexedDB
+<p align="center">
+  <img src="https://via.placeholder.com/800x400?text=OrçaFacil+Screenshot" alt="Screenshot do OrçaFacil" width="800" />
+</p>
 
-## Tecnologias Utilizadas
+## ✨ Principais Funcionalidades
 
-- React
-- TypeScript
-- Tailwind CSS
-- Vite
-- Express
-- IndexedDB (para armazenamento local)
-- Recharts (para gráficos)
+- 📈 **Dashboard Intuitivo** - Visualize estatísticas e métricas importantes do seu negócio
+- 👥 **Gerenciamento de Clientes** - Cadastre e organize todos os seus clientes
+- 🛒 **Catálogo de Produtos e Serviços** - Mantenha um catálogo atualizado com preços e descrições
+- 💰 **Orçamentos Profissionais** - Crie orçamentos detalhados com cálculos automáticos
+- 📄 **Exportação para PDF** - Gere documentos profissionais para enviar aos seus clientes
+- 🔄 **Sincronização em Nuvem** - Seus dados são armazenados com segurança e acessíveis de qualquer dispositivo
+- 💼 **Gestão de Impostos** - Configure e calcule automaticamente impostos como ISS, PIS e COFINS
+- 🌙 **Modo Escuro** - Interface adaptável para uso diurno e noturno
 
-## Como Executar
+## 🚀 Tecnologias Utilizadas
 
-### Pré-requisitos
+<div align="center">
+  <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" />
+  <img src="https://img.shields.io/badge/IndexedDB-FF9E0F?style=for-the-badge&logo=mozilla&logoColor=white" alt="IndexedDB" />
+</div>
+
+## 📋 Pré-requisitos
 
 - Node.js (v16 ou superior)
 - npm ou yarn
+- Navegador moderno com suporte a IndexedDB
 
-### Instalação
+## 🔧 Instalação e Execução
 
-1. Clone o repositório:
+### Clonando o Repositório
+
 ```bash
 git clone https://github.com/Andydev0/OrcaFacil.git
 cd OrcaFacil
 ```
 
-2. Instale as dependências:
+### Instalando Dependências
+
 ```bash
 npm install
+# ou
+yarn install
 ```
 
-3. Inicie o servidor de desenvolvimento:
+### Iniciando o Servidor de Desenvolvimento
+
 ```bash
 npm run dev
+# ou
+yarn dev
 ```
 
-4. Acesse o aplicativo em seu navegador:
+### Acessando a Aplicação
+
+Abra seu navegador e acesse:
 ```
-http://localhost:5001
+http://localhost:5000
 ```
 
-## Contribuição
+## 📱 Responsividade
 
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests.
+O OrçaFacil foi desenvolvido com foco em responsividade, funcionando perfeitamente em:
+
+- 💻 Desktops e notebooks
+- 📱 Tablets e smartphones
+- 📱 Dispositivos com diferentes tamanhos de tela
+
+## 🔒 Segurança e Privacidade
+
+- Todos os seus dados são armazenados com segurança em nossa infraestrutura na nuvem
+- Backups automáticos para garantir que você nunca perca informações importantes
+- Criptografia de ponta a ponta para proteger seus dados sensíveis
+
+## 🤝 Como Contribuir
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. Faça commit das suas alterações (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Faça push para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto está licenciado sob a Licença MIT - veja o arquivo LICENSE para detalhes.
+
+## 📧 Contato
+
+Para dúvidas, sugestões ou feedback, entre em contato através do GitHub.
+
+---
+
+<div align="center">
+  <p>Desenvolvido com ❤️ para simplificar a gestão de orçamentos</p>
+</div>

@@ -353,6 +353,144 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
+// Componentes de gráficos específicos
+const BarChart = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div"> & {
+    data: any[]
+    index: string
+    categories: string[]
+    colors?: string[]
+    valueFormatter?: (value: number) => string
+    className?: string
+  }
+>(({ data, index, categories, colors, valueFormatter, className, ...props }, ref) => {
+  const chartConfig: ChartConfig = {}
+  
+  // Configurar cores para cada categoria
+  categories.forEach((category, i) => {
+    chartConfig[category] = {
+      label: category,
+      color: colors?.[i] || `hsl(${i * 30}, 70%, 50%)`
+    }
+  })
+
+  return (
+    <ChartContainer ref={ref} className={cn("h-80", className)} config={chartConfig} {...props}>
+      <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
+        <RechartsPrimitive.BarChart data={data} margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
+          <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <RechartsPrimitive.XAxis dataKey={index} />
+          <RechartsPrimitive.YAxis 
+            tickFormatter={(value) => valueFormatter ? valueFormatter(value) : value.toString()}
+          />
+          <ChartTooltip 
+            content={({ active, payload, label }) => {
+              if (!active || !payload) return null
+              return (
+                <ChartTooltipContent>
+                  <div className="font-medium">{label}</div>
+                  <div className="mt-2 space-y-1">
+                    {payload.map((entry) => (
+                      <div key={entry.name} className="flex items-center">
+                        <div 
+                          className="mr-2 h-2 w-2 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <div>{entry.name}: {valueFormatter ? valueFormatter(entry.value as number) : entry.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </ChartTooltipContent>
+              )
+            }}
+          />
+          <ChartLegend />
+          {categories.map((category) => (
+            <RechartsPrimitive.Bar 
+              key={category}
+              dataKey={category}
+              fill={chartConfig[category].color as string}
+              radius={[4, 4, 0, 0]}
+            />
+          ))}
+        </RechartsPrimitive.BarChart>
+      </RechartsPrimitive.ResponsiveContainer>
+    </ChartContainer>
+  )
+})
+BarChart.displayName = "BarChart"
+
+const LineChart = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div"> & {
+    data: any[]
+    index: string
+    categories: string[]
+    colors?: string[]
+    valueFormatter?: (value: number) => string
+    className?: string
+  }
+>(({ data, index, categories, colors, valueFormatter, className, ...props }, ref) => {
+  const chartConfig: ChartConfig = {}
+  
+  // Configurar cores para cada categoria
+  categories.forEach((category, i) => {
+    chartConfig[category] = {
+      label: category,
+      color: colors?.[i] || `hsl(${i * 30}, 70%, 50%)`
+    }
+  })
+
+  return (
+    <ChartContainer ref={ref} className={cn("h-80", className)} config={chartConfig} {...props}>
+      <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
+        <RechartsPrimitive.LineChart data={data} margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
+          <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <RechartsPrimitive.XAxis dataKey={index} />
+          <RechartsPrimitive.YAxis 
+            tickFormatter={(value) => valueFormatter ? valueFormatter(value) : value.toString()}
+          />
+          <ChartTooltip 
+            content={({ active, payload, label }) => {
+              if (!active || !payload) return null
+              return (
+                <ChartTooltipContent>
+                  <div className="font-medium">{label}</div>
+                  <div className="mt-2 space-y-1">
+                    {payload.map((entry) => (
+                      <div key={entry.name} className="flex items-center">
+                        <div 
+                          className="mr-2 h-2 w-2 rounded-full"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <div>{entry.name}: {valueFormatter ? valueFormatter(entry.value as number) : entry.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </ChartTooltipContent>
+              )
+            }}
+          />
+          <ChartLegend />
+          {categories.map((category) => (
+            <RechartsPrimitive.Line 
+              key={category}
+              type="monotone"
+              dataKey={category}
+              stroke={chartConfig[category].color as string}
+              strokeWidth={2}
+              dot={{ r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+          ))}
+        </RechartsPrimitive.LineChart>
+      </RechartsPrimitive.ResponsiveContainer>
+    </ChartContainer>
+  )
+})
+LineChart.displayName = "LineChart"
+
 export {
   ChartContainer,
   ChartTooltip,
@@ -360,4 +498,6 @@ export {
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  BarChart,
+  LineChart,
 }

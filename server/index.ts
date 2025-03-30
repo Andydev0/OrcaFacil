@@ -41,28 +41,28 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    const message = err.message || "Erro Interno do Servidor";
 
     res.status(status).json({ message });
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Importante configurar o Vite apenas em desenvolvimento e após
+  // configurar todas as outras rotas para que a rota catch-all
+  // não interfira com as outras rotas
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // Alterando a porta para 5001 para evitar conflitos
-  const port = 5001;
+  // Alterando a porta para 5000 para o servidor principal
+  const port = 5000;
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`servidor rodando na porta ${port}`);
   });
 })();

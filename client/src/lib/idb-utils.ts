@@ -6,21 +6,11 @@ export const initializeDatabase = async (): Promise<IDBDatabase> => {
   const DB_VERSION = 2;
   
   return new Promise((resolve, reject) => {
-    // Tentar deletar o banco de dados se ele já existir e estiver com problemas
-    const deleteRequest = window.indexedDB.deleteDatabase("BudgetAppDB");
-    
-    deleteRequest.onsuccess = () => {
-      console.log("Banco de dados existente removido com sucesso. Criando nova versão...");
-      proceedWithCreation();
-    };
-    
-    deleteRequest.onerror = () => {
-      console.warn("Erro ao tentar remover banco de dados existente. Tentando criar mesmo assim...");
-      proceedWithCreation();
-    };
+    // Abrir o banco de dados diretamente, sem tentar excluí-lo primeiro
+    proceedWithCreation();
     
     function proceedWithCreation() {
-      const openRequest = window.indexedDB.open("BudgetAppDB", DB_VERSION);
+      const openRequest = window.indexedDB.open("OrcaFacilDB", DB_VERSION);
       
       openRequest.onerror = (event) => {
         console.error("Erro ao abrir o banco de dados:", event);
@@ -35,19 +25,7 @@ export const initializeDatabase = async (): Promise<IDBDatabase> => {
         const storeNames = Array.from(db.objectStoreNames);
         console.log("Object stores disponíveis:", storeNames);
         
-        // Fechar conexão para permitir modificações futuras
-        db.close();
-        
-        // Reabrir para utilização
-        const reopenRequest = window.indexedDB.open("BudgetAppDB", DB_VERSION);
-        reopenRequest.onsuccess = () => {
-          resolve(reopenRequest.result);
-        };
-        
-        reopenRequest.onerror = (event) => {
-          console.error("Erro ao reabrir banco de dados:", event);
-          reject(new Error("Erro ao reabrir banco de dados"));
-        };
+        resolve(db);
       };
       
       // Este evento é disparado apenas quando:
@@ -59,44 +37,40 @@ export const initializeDatabase = async (): Promise<IDBDatabase> => {
         const db = (event.target as IDBOpenDBRequest).result;
         
         try {
-          // Tentar remover todas as object stores existentes para recriá-las do zero
-          Array.from(db.objectStoreNames).forEach(storeName => {
-            try {
-              db.deleteObjectStore(storeName);
-              console.log(`ObjectStore '${storeName}' removido com sucesso`);
-            } catch (error) {
-              console.warn(`Erro ao remover ObjectStore '${storeName}':`, error);
-            }
-          });
+          // Criar apenas os object stores que não existem
+          if (!db.objectStoreNames.contains("products")) {
+            const productsStore = db.createObjectStore("products", { keyPath: "id", autoIncrement: true });
+            productsStore.createIndex("by-name", "name", { unique: false });
+            productsStore.createIndex("by-type", "type", { unique: false });
+            console.log("ObjectStore 'products' criado");
+          }
           
-          // Criar objectStore de produtos
-          const productsStore = db.createObjectStore("products", { keyPath: "id", autoIncrement: true });
-          productsStore.createIndex("by-name", "name", { unique: false });
-          productsStore.createIndex("by-type", "type", { unique: false });
-          console.log("ObjectStore 'products' criado");
+          if (!db.objectStoreNames.contains("clients")) {
+            const clientsStore = db.createObjectStore("clients", { keyPath: "id", autoIncrement: true });
+            clientsStore.createIndex("by-name", "name", { unique: false });
+            console.log("ObjectStore 'clients' criado");
+          }
           
-          // Criar objectStore de clientes
-          const clientsStore = db.createObjectStore("clients", { keyPath: "id", autoIncrement: true });
-          clientsStore.createIndex("by-name", "name", { unique: false });
-          console.log("ObjectStore 'clients' criado");
+          if (!db.objectStoreNames.contains("quotes")) {
+            const quotesStore = db.createObjectStore("quotes", { keyPath: "id", autoIncrement: true });
+            quotesStore.createIndex("by-client", "clientId", { unique: false });
+            quotesStore.createIndex("by-status", "status", { unique: false });
+            quotesStore.createIndex("by-date", "createdAt", { unique: false });
+            console.log("ObjectStore 'quotes' criado");
+          }
           
-          // Criar objectStore de orçamentos
-          const quotesStore = db.createObjectStore("quotes", { keyPath: "id", autoIncrement: true });
-          quotesStore.createIndex("by-client", "clientId", { unique: false });
-          quotesStore.createIndex("by-status", "status", { unique: false });
-          quotesStore.createIndex("by-date", "createdAt", { unique: false });
-          console.log("ObjectStore 'quotes' criado");
+          if (!db.objectStoreNames.contains("quoteItems")) {
+            const quoteItemsStore = db.createObjectStore("quoteItems", { keyPath: "id", autoIncrement: true });
+            quoteItemsStore.createIndex("by-quote", "quoteId", { unique: false });
+            console.log("ObjectStore 'quoteItems' criado");
+          }
           
-          // Criar objectStore de itens de orçamento
-          const quoteItemsStore = db.createObjectStore("quoteItems", { keyPath: "id", autoIncrement: true });
-          quoteItemsStore.createIndex("by-quote", "quoteId", { unique: false });
-          console.log("ObjectStore 'quoteItems' criado");
+          if (!db.objectStoreNames.contains("companySettings")) {
+            const settingsStore = db.createObjectStore("companySettings", { keyPath: "id", autoIncrement: true });
+            console.log("ObjectStore 'companySettings' criado");
+          }
           
-          // Criar objectStore de configurações da empresa
-          const settingsStore = db.createObjectStore("companySettings", { keyPath: "id", autoIncrement: true });
-          console.log("ObjectStore 'companySettings' criado");
-          
-          console.log("Todos os object stores foram criados com sucesso!");
+          console.log("Todos os object stores foram verificados/criados com sucesso!");
         } catch (error) {
           console.error("Erro ao criar object stores:", error);
         }

@@ -42,15 +42,21 @@ export function generateColorFromString(str: string): string {
   return `hsl(${hue}, 70%, 45%)`;
 }
 
+/**
+ * Obtém as iniciais de um nome
+ * @param name Nome completo
+ * @returns Iniciais (máximo 2 caracteres)
+ */
 export function getInitials(name: string): string {
-  if (!name) return '';
+  if (!name || name.trim() === '') return '?';
   
-  return name
-    .split(' ')
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
+  const parts = name.trim().split(/\s+/);
+  
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 export function truncateText(text: string, maxLength: number): string {
@@ -59,34 +65,34 @@ export function truncateText(text: string, maxLength: number): string {
   return text.substring(0, maxLength) + '...';
 }
 
-export function getStatusColor(status: string): string {
+export function getStatusColor(status: string): "default" | "destructive" | "outline" | "secondary" | "rascunho" | "pendente" | "analise" | "aprovado" | "recusado" {
   switch (status) {
-    case 'approved':
-      return 'bg-green-100 text-green-600';
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-600';
-    case 'analyzing':
-      return 'bg-blue-100 text-blue-600';
-    case 'rejected':
-      return 'bg-red-100 text-red-600';
-    case 'draft':
-      return 'bg-gray-100 text-gray-600';
+    case 'aprovado':
+      return 'aprovado';
+    case 'pendente':
+      return 'pendente';
+    case 'analisando':
+      return 'analise';
+    case 'recusado':
+      return 'recusado';
+    case 'rascunho':
+      return 'rascunho';
     default:
-      return 'bg-gray-100 text-gray-600';
+      return 'default';
   }
 }
 
 export function getStatusText(status: string): string {
   switch (status) {
-    case 'approved':
+    case 'aprovado':
       return 'Aprovado';
-    case 'pending':
+    case 'pendente':
       return 'Pendente';
-    case 'analyzing':
+    case 'analisando':
       return 'Em análise';
-    case 'rejected':
+    case 'recusado':
       return 'Recusado';
-    case 'draft':
+    case 'rascunho':
       return 'Rascunho';
     default:
       return status;

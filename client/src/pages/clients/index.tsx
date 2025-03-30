@@ -7,43 +7,57 @@ import {
   CardDescription 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus as PlusIcon, Edit as EditIcon, Trash as TrashIcon, Mail as MailIcon, Phone as PhoneIcon } from "lucide-react";
+import { 
+  Plus as PlusIcon, 
+  Edit as EditIcon, 
+  Trash as TrashIcon, 
+  Mail as MailIcon, 
+  Phone as PhoneIcon,
+  Search as SearchIcon,
+  UserPlus as UserPlusIcon,
+  Users as UsersIcon,
+  Filter as FilterIcon
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/ui/data-table";
-import { Client } from "@/types";
-import { initDB, getAll, add, update, remove } from "@/lib/db";
+import { Cliente } from "@/types";
+import { inicializarBD, buscarTodos, adicionar, atualizar, remover } from "@/lib/db";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 // Função independente para salvar clientes sem depender do contexto
-const saveClientToIndexedDB = async (client: Partial<Client>): Promise<number> => {
+const salvarClienteNoBD = async (cliente: Partial<Cliente>): Promise<number> => {
   try {
-    const db = await initDB();
+    const db = await inicializarBD();
     
-    const now = new Date();
-    const clientToSave = {
-      ...client,
-      createdAt: client.id ? undefined : now
+    const agora = new Date();
+    const clienteParaSalvar = {
+      ...cliente,
+      criadoEm: cliente.id ? undefined : agora
     };
     
-    if (client.id) {
-      return await update('clients', clientToSave as Client);
+    if (cliente.id) {
+      await atualizar('clientes', clienteParaSalvar as Cliente);
+      return cliente.id;
     } else {
-      return await add('clients', clientToSave as Omit<Client, 'id'>);
+      return await adicionar('clientes', clienteParaSalvar as Omit<Cliente, 'id'>);
     }
   } catch (error) {
     console.error("Erro ao salvar cliente:", error);
-    throw new Error("Erro ao salvar o cliente");
+    throw error;
   }
 };
 
 // Função independente para buscar clientes sem depender do contexto
-const getClientsFromIndexedDB = async (): Promise<Client[]> => {
+const buscarClientesNoBD = async (): Promise<Cliente[]> => {
   try {
-    const db = await initDB();
-    return await getAll<Client>('clients');
+    const db = await inicializarBD();
+    return await buscarTodos<Cliente>('clientes');
   } catch (error) {
     console.error("Erro ao buscar clientes:", error);
     return [];
@@ -51,32 +65,44 @@ const getClientsFromIndexedDB = async (): Promise<Client[]> => {
 };
 
 // Função independente para deletar clientes sem depender do contexto
-const deleteClientFromIndexedDB = async (id: number): Promise<void> => {
+const deletarClienteNoBD = async (id: number): Promise<void> => {
   try {
-    const db = await initDB();
-    await remove('clients', id);
+    const db = await inicializarBD();
+    await remover('clientes', id);
   } catch (error) {
     console.error("Erro ao excluir cliente:", error);
     throw new Error("Erro ao excluir o cliente");
   }
 };
 
+// Função para obter as iniciais do nome
+const getInitials = (name: string) => {
+  if (!name) return '?';
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
+
 const ClientsPage: React.FC = () => {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<Cliente[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Cliente[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("todos");
   
   // Form state
-  const [formData, setFormData] = useState<Partial<Client>>({
-    name: '',
-    document: '',
+  const [formData, setFormData] = useState<Partial<Cliente>>({
+    nome: '',
+    documento: '',
     email: '',
-    phone: '',
-    address: ''
+    telefone: '',
+    endereco: ''
   });
 
   // Carregar clientes ao iniciar
@@ -86,7 +112,7 @@ const ClientsPage: React.FC = () => {
   
   const loadClients = async () => {
     try {
-      const loadedClients = await getClientsFromIndexedDB();
+      const loadedClients = await buscarClientesNoBD();
       setClients(loadedClients);
       setFilteredClients(loadedClients);
     } catch (error) {
@@ -94,44 +120,61 @@ const ClientsPage: React.FC = () => {
     }
   };
   
-  // Filtrar clientes conforme pesquisa
+  // Filtrar clientes conforme pesquisa e tab ativa
   useEffect(() => {
-    if (searchQuery.trim() === '') {
+    if (searchQuery.trim() === '' && activeTab === 'todos') {
       setFilteredClients(clients);
     } else {
-      const query = searchQuery.toLowerCase();
-      setFilteredClients(
-        clients.filter(
-          c => c.name.toLowerCase().includes(query) || 
-             (c.document && c.document.toLowerCase().includes(query)) ||
+      let filtered = [...clients];
+      
+      // Aplicar filtro de pesquisa
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          c => c.nome.toLowerCase().includes(query) || 
+             (c.documento && c.documento.toLowerCase().includes(query)) ||
              (c.email && c.email.toLowerCase().includes(query))
-        )
-      );
+        );
+      }
+      
+      // Aplicar filtro de tab
+      if (activeTab === 'recentes') {
+        // Ordenar por data de criação (mais recentes primeiro)
+        filtered = filtered.sort((a, b) => 
+          new Date(b.criadoEm || 0).getTime() - new Date(a.criadoEm || 0).getTime()
+        ).slice(0, 10); // Pegar apenas os 10 mais recentes
+      }
+      
+      setFilteredClients(filtered);
     }
-  }, [clients, searchQuery]);
+  }, [clients, searchQuery, activeTab]);
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
   
-  const handleOpenDialog = (client?: Client) => {
+  const handleOpenDialog = (client?: Cliente) => {
     if (client) {
       setFormData({
         id: client.id,
-        name: client.name,
-        document: client.document,
+        nome: client.nome,
+        documento: client.documento,
         email: client.email,
-        phone: client.phone,
-        address: client.address
+        telefone: client.telefone,
+        endereco: client.endereco
       });
       setIsEditing(true);
     } else {
       setFormData({
-        name: '',
-        document: '',
+        nome: '',
+        documento: '',
         email: '',
-        phone: '',
-        address: ''
+        telefone: '',
+        endereco: ''
       });
       setIsEditing(false);
     }
@@ -150,7 +193,7 @@ const ClientsPage: React.FC = () => {
     e.preventDefault();
     
     try {
-      await saveClientToIndexedDB(formData);
+      await salvarClienteNoBD(formData);
       setIsDialogOpen(false);
       loadClients(); // Recarregar a lista após salvar
     } catch (error) {
@@ -166,7 +209,7 @@ const ClientsPage: React.FC = () => {
   const confirmDelete = async () => {
     if (clientToDelete) {
       try {
-        await deleteClientFromIndexedDB(clientToDelete);
+        await deletarClienteNoBD(clientToDelete);
         setIsDeleteDialogOpen(false);
         setClientToDelete(null);
         loadClients(); // Recarregar a lista após excluir
@@ -175,209 +218,225 @@ const ClientsPage: React.FC = () => {
       }
     }
   };
-  
-  const columns = [
-    {
-      header: "ID",
-      accessorKey: "id" as keyof Client
-    },
-    {
-      header: "Nome",
-      accessorKey: "name" as keyof Client
-    },
-    {
-      header: "Documento",
-      accessorKey: "document" as keyof Client,
-      cell: (client: Client) => client.document || '-'
-    },
-    {
-      header: "Contato",
-      accessorKey: "email" as keyof Client,
-      cell: (client: Client) => (
-        <div className="flex flex-col">
-          {client.email && (
-            <div className="flex items-center gap-1 text-xs">
-              <MailIcon size={12} className="text-secondary-600" /> {client.email}
-            </div>
-          )}
-          {client.phone && (
-            <div className="flex items-center gap-1 text-xs mt-1">
-              <PhoneIcon size={12} className="text-secondary-600" /> {client.phone}
-            </div>
-          )}
-          {!client.email && !client.phone && '-'}
-        </div>
-      )
-    },
-    {
-      header: "Endereço",
-      accessorKey: "address" as keyof Client,
-      cell: (client: Client) => (
-        <div className="max-w-xs truncate">{client.address || '-'}</div>
-      )
-    },
-    {
-      header: "Ações",
-      accessorKey: "id" as keyof Client,
-      cell: (client: Client) => (
-        <div className="flex space-x-1">
-          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(client)}>
-            <EditIcon size={16} className="text-secondary-600" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(client.id)}>
-            <TrashIcon size={16} className="text-red-600" />
-          </Button>
-        </div>
-      )
-    }
-  ];
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-secondary-900">Clientes</h1>
-          <p className="text-secondary-500">Gerenciar cadastro de clientes</p>
-        </div>
-        <Button onClick={() => handleOpenDialog()} className="flex items-center gap-2">
-          <PlusIcon size={16} />
-          Novo Cliente
-        </Button>
-      </div>
-      
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Lista de Clientes</CardTitle>
-          <CardDescription>
-            Total de {filteredClients.length} clientes cadastrados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <Input
-              placeholder="Buscar por nome, documento ou email..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="max-w-md"
-            />
+    <div className="container mx-auto px-4 py-6">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
+            <p className="text-gray-500 mt-1">Gerenciamento de clientes</p>
           </div>
-          
-          <DataTable
-            columns={columns}
-            data={filteredClients}
-            emptyState={
-              <div className="text-center py-10">
-                <p className="text-secondary-500 mb-4">Nenhum cliente cadastrado</p>
-                <Button onClick={() => handleOpenDialog()} variant="outline" className="gap-2">
-                  <PlusIcon size={16} />
-                  Cadastrar seu primeiro cliente
+          <Button 
+            onClick={() => handleOpenDialog()} 
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+          >
+            <UserPlusIcon size={16} />
+            Novo Cliente
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="col-span-1 md:col-span-3 bg-white shadow-sm border border-gray-100">
+            <CardHeader className="pb-0">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <Input 
+                      placeholder="Buscar clientes..." 
+                      className="pl-10 bg-gray-50 border-gray-200"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                    />
+                  </div>
+                </div>
+                <Tabs defaultValue="todos" className="w-full sm:w-auto" onValueChange={handleTabChange}>
+                  <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+                    <TabsTrigger value="todos">Todos</TabsTrigger>
+                    <TabsTrigger value="recentes">Recentes</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {filteredClients.length === 0 ? (
+                <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                    <UsersIcon size={24} className="text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 mb-4">Nenhum cliente encontrado.</p>
+                  <Button onClick={() => handleOpenDialog()}>Adicionar Cliente</Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredClients.map((client) => (
+                    <Card key={client.id} className="overflow-hidden hover:shadow-md transition-shadow border border-gray-100">
+                      <div className="flex p-4">
+                        <Avatar className="h-12 w-12 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                          <AvatarFallback>{getInitials(client.nome)}</AvatarFallback>
+                        </Avatar>
+                        <div className="ml-4 flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{client.nome}</h3>
+                              {client.documento && (
+                                <p className="text-sm text-gray-500">{client.documento}</p>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleOpenDialog(client)}
+                                className="h-8 w-8 text-gray-500 hover:text-amber-600 hover:bg-amber-50"
+                              >
+                                <EditIcon size={15} />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteClick(client.id)}
+                                className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                              >
+                                <TrashIcon size={15} />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            {client.email && (
+                              <div className="flex items-center text-sm text-gray-600">
+                                <MailIcon size={14} className="mr-2 text-gray-400" />
+                                <span className="truncate">{client.email}</span>
+                              </div>
+                            )}
+                            {client.telefone && (
+                              <div className="flex items-center text-sm text-gray-600">
+                                <PhoneIcon size={14} className="mr-2 text-gray-400" />
+                                <span>{client.telefone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {client.endereco && (
+                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                          <p className="text-xs text-gray-500">
+                            <span className="font-medium">Endereço:</span> {client.endereco}
+                          </p>
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Dialog para adicionar/editar cliente */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{isEditing ? 'Editar Cliente' : 'Adicionar Novo Cliente'}</DialogTitle>
+              <DialogDescription>
+                {isEditing ? 'Atualize as informações do cliente abaixo.' : 'Preencha as informações do novo cliente.'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="nome">Nome*</Label>
+                  <Input
+                    id="nome"
+                    name="nome"
+                    value={formData.nome}
+                    onChange={handleInputChange}
+                    placeholder="Nome completo"
+                    required
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="documento">Documento (CPF/CNPJ)</Label>
+                  <Input
+                    id="documento"
+                    name="documento"
+                    value={formData.documento || ''}
+                    onChange={handleInputChange}
+                    placeholder="CPF ou CNPJ"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email || ''}
+                      onChange={handleInputChange}
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="telefone">Telefone</Label>
+                    <Input
+                      id="telefone"
+                      name="telefone"
+                      value={formData.telefone || ''}
+                      onChange={handleInputChange}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="endereco">Endereço</Label>
+                  <Textarea
+                    id="endereco"
+                    name="endereco"
+                    value={formData.endereco || ''}
+                    onChange={handleInputChange}
+                    placeholder="Endereço completo"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancelar
                 </Button>
-              </div>
-            }
-          />
-        </CardContent>
-      </Card>
-      
-      {/* Client Form Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
-            <DialogDescription>
-              {isEditing ? 'Altere os dados do cliente conforme necessário.' : 'Preencha os dados para cadastrar um novo cliente.'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="name" className="text-right">
-                  Nome*
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="document" className="text-right">
-                  CPF/CNPJ
-                </Label>
-                <Input
-                  id="document"
-                  name="document"
-                  value={formData.document}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="email" className="text-right">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone" className="text-right">
-                  Telefone
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="address" className="text-right">
-                  Endereço
-                </Label>
-                <Textarea
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  rows={3}
-                />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit">{isEditing ? 'Atualizar' : 'Cadastrar'}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita e pode afetar orçamentos existentes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+                <Button type="submit" className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                  {isEditing ? 'Salvar Alterações' : 'Adicionar Cliente'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de confirmação para excluir */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente
+                e todos os dados associados a ele.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
   );
 };
 

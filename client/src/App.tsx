@@ -9,11 +9,12 @@ import ProductsPage from "@/pages/products";
 import ServicesPage from "@/pages/services";
 import ClientsPage from "@/pages/clients";
 import SettingsPage from "@/pages/settings";
+import PerfilPage from "@/pages/configuracoes/perfil";
+import SegurancaPage from "@/pages/configuracoes/seguranca";
 import AuthPage from "@/pages/auth-page";
 import { initializeDatabase } from "@/lib/idb-utils";
 import { ProtectedRoute } from "@/lib/protected-route";
 
-// App component with added error boundary
 export default function App() {
   // Inicializa o banco de dados quando o aplicativo é carregado
   useEffect(() => {
@@ -33,6 +34,7 @@ export default function App() {
     <div className="app-container">
       <Switch>
         <Route path="/auth" component={AuthPage} />
+        <Route path="/login" component={AuthPage} />
           
         {/* Rotas protegidas dentro do layout com sidebar */}
         <ProtectedRoute 
@@ -44,7 +46,7 @@ export default function App() {
           )} 
         />
         <ProtectedRoute 
-          path="/quotes" 
+          path="/orcamentos" 
           component={() => (
             <SidebarLayout>
               <QuotesPage />
@@ -52,7 +54,7 @@ export default function App() {
           )} 
         />
         <ProtectedRoute 
-          path="/quotes/create" 
+          path="/orcamentos/criar" 
           component={() => (
             <SidebarLayout>
               <CreateQuotePage />
@@ -60,15 +62,16 @@ export default function App() {
           )} 
         />
         <Route 
-          path="/quotes/:id" 
-          component={(params: any) => (
+          path="/orcamentos/:id" 
+        >
+          {params => (
             <SidebarLayout>
               <CreateQuotePage params={params} />
             </SidebarLayout>
-          )} 
-        />
+          )}
+        </Route>
         <ProtectedRoute 
-          path="/products" 
+          path="/produtos" 
           component={() => (
             <SidebarLayout>
               <ProductsPage />
@@ -76,7 +79,7 @@ export default function App() {
           )} 
         />
         <ProtectedRoute 
-          path="/services" 
+          path="/servicos" 
           component={() => (
             <SidebarLayout>
               <ServicesPage />
@@ -84,7 +87,7 @@ export default function App() {
           )} 
         />
         <ProtectedRoute 
-          path="/clients" 
+          path="/clientes" 
           component={() => (
             <SidebarLayout>
               <ClientsPage />
@@ -92,10 +95,26 @@ export default function App() {
           )} 
         />
         <ProtectedRoute 
-          path="/settings" 
+          path="/configuracoes" 
           component={() => (
             <SidebarLayout>
               <SettingsPage />
+            </SidebarLayout>
+          )} 
+        />
+        <ProtectedRoute 
+          path="/configuracoes/perfil" 
+          component={() => (
+            <SidebarLayout>
+              <PerfilPage />
+            </SidebarLayout>
+          )} 
+        />
+        <ProtectedRoute 
+          path="/configuracoes/seguranca" 
+          component={() => (
+            <SidebarLayout>
+              <SegurancaPage />
             </SidebarLayout>
           )} 
         />

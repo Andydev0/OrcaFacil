@@ -15,6 +15,12 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Novas variantes para status de orçamentos
+        rascunho: "border-transparent bg-[#9E9E9E] text-white hover:bg-[#9E9E9E]/80",
+        pendente: "border-transparent bg-[#FFA726] text-white hover:bg-[#FFA726]/80",
+        analise: "border-transparent bg-[#42A5F5] text-white hover:bg-[#42A5F5]/80",
+        aprovado: "border-transparent bg-[#66BB6A] text-white hover:bg-[#66BB6A]/80",
+        recusado: "border-transparent bg-[#EF5350] text-white hover:bg-[#EF5350]/80",
       },
     },
     defaultVariants: {

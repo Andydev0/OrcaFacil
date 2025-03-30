@@ -5,6 +5,12 @@ export interface User {
   email: string;
   password: string; // Em uma aplicação real, nunca armazene senhas em texto simples
   createdAt: Date;
+  avatar?: {
+    id: string;
+    name: string;
+    colors: string[];
+    description: string;
+  };
 }
 
 // Interface para o registro de usuário
