@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import * as uuid from 'uuid';
 import { Notification } from '@/components/ui/notifications';
 import { buscarTodos } from '@/lib/db';
 import { Orcamento } from '@/types';
@@ -81,7 +81,7 @@ export const useNotifications = () => {
         // Apenas mostrar notificações para orçamentos que não estão em rascunho e não foram vistas
         if (orcamento.status !== 'rascunho' && isExpiringSoon(orcamento.validoAte) && !existingExpNotification && !alreadyViewed) {
           newNotifications.push({
-            id: uuidv4(),
+            id: uuid.v4(),
             title: `Orçamento #${orcamento.id} expira em breve`,
             message: `O orçamento "${orcamento.titulo}" expira em breve.`,
             type: 'warning',
@@ -106,7 +106,7 @@ export const useNotifications = () => {
         // Apenas mostrar notificações para orçamentos que não estão em rascunho e não foram vistas
         if (orcamento.status !== 'rascunho' && isRecentlyApproved(orcamento.status, orcamento.criadoEm) && !existingApprovalNotification && !approvalAlreadyViewed) {
           newNotifications.push({
-            id: uuidv4(),
+            id: uuid.v4(),
             title: `Orçamento #${orcamento.id} aprovado`,
             message: `O orçamento "${orcamento.titulo}" foi aprovado!`,
             type: 'success',
@@ -143,7 +143,7 @@ export const useNotifications = () => {
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
-      id: uuidv4(),
+      id: uuid.v4(),
       timestamp: new Date(),
       read: false
     };
