@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import * as uuid from 'uuid';
+// Implementação simples de UUID v4 para evitar problemas de importação
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 import { Notification } from '@/components/ui/notifications';
 import { buscarTodos } from '@/lib/db';
 import { Orcamento } from '@/types';
@@ -81,7 +88,7 @@ export const useNotifications = () => {
         // Apenas mostrar notificações para orçamentos que não estão em rascunho e não foram vistas
         if (orcamento.status !== 'rascunho' && isExpiringSoon(orcamento.validoAte) && !existingExpNotification && !alreadyViewed) {
           newNotifications.push({
-            id: uuid.v4(),
+            id: uuidv4(),
             title: `Orçamento #${orcamento.id} expira em breve`,
             message: `O orçamento "${orcamento.titulo}" expira em breve.`,
             type: 'warning',
@@ -106,7 +113,7 @@ export const useNotifications = () => {
         // Apenas mostrar notificações para orçamentos que não estão em rascunho e não foram vistas
         if (orcamento.status !== 'rascunho' && isRecentlyApproved(orcamento.status, orcamento.criadoEm) && !existingApprovalNotification && !approvalAlreadyViewed) {
           newNotifications.push({
-            id: uuid.v4(),
+            id: uuidv4(),
             title: `Orçamento #${orcamento.id} aprovado`,
             message: `O orçamento "${orcamento.titulo}" foi aprovado!`,
             type: 'success',
@@ -143,7 +150,7 @@ export const useNotifications = () => {
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
-      id: uuid.v4(),
+      id: uuidv4(),
       timestamp: new Date(),
       read: false
     };
