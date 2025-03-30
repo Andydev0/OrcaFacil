@@ -1,0 +1,49 @@
+@import "./styles/theme.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply max-w-7xl mx-auto animate-fadeIn;
+  }
+  
+  .section-title {
+    @apply text-2xl font-bold text-gray-800 mb-6;
+  }
+  
+  .dashboard-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
+  }
+  
+  .dashboard-card {
+    @apply p-6 rounded-xl bg-white shadow-sm border border-gray-100 card-hover;
+  }
+  
+  .data-card {
+    @apply p-6 rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden;
+  }
+  
+  .form-container {
+    @apply space-y-6 p-6 bg-white rounded-xl shadow-sm border border-gray-100;
+  }
+  
+  .form-section {
+    @apply space-y-4;
+  }
+  
+  .form-group {
+    @apply space-y-2;
+  }
+}
