@@ -4,7 +4,8 @@ import {
   buscarPorId, 
   buscarTodos, 
   salvarOrcamentoComItens,
-  buscarConfiguracaoEmpresa
+  buscarConfiguracaoEmpresa,
+  atualizar
 } from "@/lib/db";
 import { 
   Cliente, 
@@ -343,6 +344,41 @@ const CreateQuotePage: React.FC<CreateQuotePageProps> = ({ params }) => {
     }
   };
 
+  // Função para aprovar o orçamento
+  const aprovarOrcamento = async () => {
+    if (!quoteId) return;
+    
+    try {
+      // Buscar o orçamento atual
+      const orcamentoAtual = await buscarPorId<Orcamento>('orcamentos', quoteId);
+      
+      if (!orcamentoAtual) {
+        console.error("Orçamento não encontrado");
+        return;
+      }
+      
+      // Atualizar o status para aprovado
+      const orcamentoAtualizado = {
+        ...orcamentoAtual,
+        status: 'aprovado' as OrcamentoStatus
+      };
+      
+      // Salvar a atualização
+      await atualizar('orcamentos', orcamentoAtualizado);
+      
+      // Atualizar o estado local
+      setStatus('aprovado');
+      
+      // Mostrar feedback visual (você pode adicionar uma notificação aqui se desejar)
+      console.log("Orçamento aprovado com sucesso!");
+      
+      // Recarregar a página para refletir as mudanças
+      window.location.reload();
+    } catch (error) {
+      console.error("Erro ao aprovar orçamento:", error);
+    }
+  };
+
   return (
     <div className="container py-6 space-y-6">
       {loading ? (
@@ -513,9 +549,15 @@ const CreateQuotePage: React.FC<CreateQuotePageProps> = ({ params }) => {
               <Button variant="outline" onClick={imprimirOrcamento}>
                 Imprimir
               </Button>
-              <Button variant="default">
-                Aprovar Orçamento
-              </Button>
+              {status === 'aprovado' ? (
+                <Button variant="outline" disabled className="bg-green-50 text-green-700 border-green-300">
+                  ✓ Orçamento Aprovado
+                </Button>
+              ) : (
+                <Button variant="default" onClick={aprovarOrcamento}>
+                  Aprovar Orçamento
+                </Button>
+              )}
             </div>
           </div>
         </div>
